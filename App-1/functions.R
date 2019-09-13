@@ -35,7 +35,7 @@ dCustomHalfCauchy <- function(x,location,scale){
 
 pCustomHalfCauchy <- function(x,location,scale){
   aInt <- integrate(function(x) dcauchy(x,location,scale),0,Inf)
-  return((1/aInt)*pcauchy(x,location,scale))
+  return((1/aInt[1]$value)*(pcauchy(x,location,scale) - pcauchy(0, location, scale)))
 }
 
 dCustomBetaBinomial <- function(x, n, alpha, beta){
@@ -83,6 +83,12 @@ rcoronion<-function(d,eta=1){
   # return rr
   rr
 }
+
+# from https://stats.stackexchange.com/questions/3930/are-there-default-functions-for-discrete-uniform-distributions-in-r/3940
+dunifdisc<-function(x, min=0, max=1) ifelse(x>=min & x<=max & round(x)==x, 1 / (max - min + 1), 0)
+punifdisc<-function(q, min=0, max=1) ifelse(q<min, 0, ifelse(q>=max, 1, (floor(q)-min+1)/(max-min+1)))
+qunifdisc<-function(p, min=0, max=1) floor(p*(max-min+1))
+runifdisc<-function(n, min=0, max=1) sample(min:max, n, replace=T)
 
 fMakeFunctionPaste <- function(mainName, params, prefixparams=NULL,
                                postfixparams=NULL, import=NULL, freeform=NULL,
@@ -235,6 +241,7 @@ fCalculateMeanFull <- function(input){
     switch(input$dist1,
            Bernoulli=input$bernoulli_prob,
            Binomial=input$binomial_size * input$binomial_prob,
+           DiscreteUniform=0.5 * (input$discreteuniform_lower + input$discreteuniform_upper),
            Poisson=input$poisson_lambda,
            NegativeBinomial=input$negativebinomial_mean,
            BetaBinomial=input$betabinomial_size * input$betabinomial_shape1 / (input$betabinomial_shape1 + input$betabinomial_shape2),
@@ -269,7 +276,8 @@ fCalculateVarianceFull <- function(input){
   }else if (input$distType=='Discrete'){
     aVar <- switch(input$dist1,
                    Bernoulli=input$bernoulli_prob * (1 - input$bernoulli_prob),
-                   Binomial=input$binomial_size * input$binomial_prob * (1 - input$bernoulli_prob),
+                   Binomial=input$binomial_size * input$binomial_prob * (1 - input$binomial_prob),
+                   DiscreteUniform= (1 / 12) * ((input$discreteuniform_upper - input$discreteuniform_lower + 1)^2 - 1),
                    Poisson=input$poisson_lambda,
                    NegativeBinomial=input$negativebinomial_mean + (input$negativebinomial_mean^2 / input$negativebinomial_dispersion),
                    BetaBinomial=input$betabinomial_size * input$betabinomial_shape1 * input$betabinomial_shape2 *(input$betabinomial_shape1 + input$betabinomial_shape2 + input$betabinomial_size) / ((input$betabinomial_shape1 + input$betabinomial_shape2)^2 * (input$betabinomial_shape1 + input$betabinomial_shape2 + 1))
